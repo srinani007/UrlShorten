@@ -2,42 +2,60 @@ package com.prashanth.url_shortener.service;
 
 import com.prashanth.url_shortener.model.ShortLink;
 import com.prashanth.url_shortener.repository.ShortLinkRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.Random;
-
 @Service
 public class UrlShortenerService {
 
-    private final ShortLinkRepository repository;
+    @Autowired
+    private ShortLinkRepository repository;
 
-    public UrlShortenerService(ShortLinkRepository repository) {
-        this.repository = repository;
-    }
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
-    // Method to generate a short link
+    private static final String PREFIX = "short-url:";
+
     public String shortenUrl(String longUrl) {
-        // Generate a unique short code
         String shortCode = generateShortCode();
+
         ShortLink link = new ShortLink();
         link.setShortCode(shortCode);
         link.setLongUrl(longUrl);
         repository.save(link);
+
+        redisTemplate.opsForValue().set(PREFIX + shortCode, longUrl);
+        System.out.println("🧠 CACHED IN REDIS: short-url:" + shortCode + " → " + longUrl);
+
+
         return shortCode;
+
     }
 
-    public Optional<ShortLink> getOriginalUrl(String shortcode){
-        return repository.findByShortCode(shortcode);
+    public Optional<ShortLink> getOriginalUrl(String shortCode) {
+        String cachedUrl = redisTemplate.opsForValue().get(PREFIX + shortCode);
+        if (cachedUrl != null) {
+            ShortLink link = new ShortLink();
+            link.setShortCode(shortCode);
+            link.setLongUrl(cachedUrl);
+            return Optional.of(link);
+        }
+
+        Optional<ShortLink> dbResult = repository.findByShortCode(shortCode);
+        dbResult.ifPresent(link -> redisTemplate.opsForValue().set(PREFIX + shortCode, link.getLongUrl()));
+        return dbResult;
     }
 
     private String generateShortCode() {
         String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder shortCode = new StringBuilder();
+        StringBuilder code = new StringBuilder();
         Random random = new Random();
         for (int i = 0; i < 6; i++) {
-            shortCode.append(chars.charAt(random.nextInt(chars.length())));
+            code.append(chars.charAt(random.nextInt(chars.length())));
         }
-        return shortCode.toString();
+        return code.toString();
     }
 }
