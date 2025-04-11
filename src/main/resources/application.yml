@@ -1,0 +1,17 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/urlshortenerdb
+    username: postgres         # 👈 your PostgreSQL username
+    password: "@Srinani7029"    # 👈 your PostgreSQL password
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update         # or use 'none' if you're doing manual schema
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
