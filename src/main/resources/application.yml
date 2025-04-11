@@ -4,21 +4,29 @@ server:
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/urlshortenerdb
-    username: postgres         # 👈 your PostgreSQL username
-    password: "@Srinani7029"    # 👈 your PostgreSQL password
+    username: postgres
+    password: "@Srinani7029"
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update         # or use 'none' if you're doing manual schema
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
-
-  redis:
-    host: localhost
-    port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 

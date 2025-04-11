@@ -1,7 +1,10 @@
 package com.prashanth.url_shortener.controller;
 
+import com.prashanth.url_shortener.kafka.ClickLoggerProducer;
 import com.prashanth.url_shortener.model.ShortLink;
 import com.prashanth.url_shortener.service.UrlShortenerService;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,9 +13,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
-
+@Tag(name = "URL Shortening")
 @RestController
 @RequestMapping("/api")
 public class UrlShortenerController {
@@ -20,6 +25,9 @@ public class UrlShortenerController {
 
     @Autowired
     private UrlShortenerService service;
+
+    @Autowired
+    private ClickLoggerProducer clickLogger;
 
     @PostMapping("/shorten")
     public ResponseEntity<?> shorten(@RequestBody Map<String, String> body) {
@@ -46,20 +54,24 @@ public class UrlShortenerController {
 
 
     @GetMapping("/{shortCode}")
-    public void redirect(@PathVariable String shortCode, HttpServletResponse response) throws IOException {
-        service.getOriginalUrl(shortCode).ifPresentOrElse(link -> {
-            try {
-                response.sendRedirect(link.getLongUrl());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }, () -> {
-            try {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "Short URL not found");
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+    public void redirect(@PathVariable String shortCode, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Optional<ShortLink> result = service.getOriginalUrl(shortCode);
+
+        if (result.isPresent()) {
+            ShortLink link = result.get();
+
+            //Build click event
+            String payload = String.format("{\"shortCode\":\"%s\", \"timestamp\":\"%s\", \"ip\":\"%s\", \"userAgent\":\"%s\"}",
+                    shortCode,
+                    LocalDateTime.now(),
+                    request.getRemoteAddr(),
+                    request.getHeader("User-Agent"));
+            clickLogger.logClick(payload); // send to Kafka
+
+            response.sendRedirect(link.getLongUrl());
+        } else {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Short link not found");
+        }
     }
 
     @GetMapping("/error")

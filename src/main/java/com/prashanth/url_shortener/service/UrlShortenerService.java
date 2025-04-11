@@ -6,8 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Random;
+
 @Service
 public class UrlShortenerService {
 
@@ -29,6 +31,8 @@ public class UrlShortenerService {
 
         redisTemplate.opsForValue().set(PREFIX + shortCode, longUrl);
         System.out.println("🧠 CACHED IN REDIS: short-url:" + shortCode + " → " + longUrl);
+        redisTemplate.opsForValue().set("short-url:" + shortCode, longUrl, Duration.ofHours(1));
+
 
 
         return shortCode;

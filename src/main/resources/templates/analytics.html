@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Analytics for [[${shortCode}]]</title>
+    <style>
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+<h2 style="text-align: center;">Click Analytics for: <span th:text="${shortCode}"></span></h2>
+
+<table>
+    <thead>
+    <tr>
+        <th>Timestamp</th>
+        <th>IP Address</th>
+        <th>User Agent</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="click : ${clicks}">
+        <td th:text="${click.timestamp}"></td>
+        <td th:text="${click.ip}"></td>
+        <td th:text="${click.userAgent}"></td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
